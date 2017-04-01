@@ -1,30 +1,26 @@
-calculate_deltas = ({ from: { d, h, m, s, ms } = {}, to: { D, H, M, S, MS } = {} }) ->
-  now = new Date()
+UNITS = [
+  1000
+  60
+  60
+  24
+  7
+]
 
-  d ?= now.getDay()
-  h ?= now.getHours()
-  m ?= now.getMinutes()
-  s ?= now.getSeconds()
-  ms ?= now.getMilliseconds()
-
-  delta_d = 0
-  delta_h = 0
-  delta_m = 0
-  delta_s = 0
-  delta_ms = 0
-
-  delta_ms = MS - ms if MS?
-  delta_s = S - s - (if delta_ms < 0 then 1 else 0) if S?
-  delta_m = M - m - (if delta_s < 0 then 1 else 0) if M?
-  delta_h = H - h - (if delta_m < 0 then 1 else 0) if H?
-  delta_d = D - d - (if delta_h < 0 then 1 else 0) if D?
-
-  [
-    delta_d %%= 7
-    delta_h %%= 24
-    delta_m %%= 60
-    delta_s %%= 60
-    delta_ms %%= 1000
+calculate = ({ from: { d, h, m, s, ms }, to: { d: D, h: H, m: M, s: S, ms: MS } }) ->
+  lst = [
+    [ms, MS]
+    [s, S]
+    [m, M]
+    [h, H]
+    [d, D]
   ]
 
-module.exports = calculate_deltas
+  accumulate = 0
+  for [start, end], i in lst
+    delta = if end? and start? then end - start - accumulate else 0
+    accumulate = if delta < 0 then 1 else 0
+    delta %% UNITS[i]
+
+exports.humanize = (cfg) -> calculate(cfg).reverse()
+exports.ms = (cfg) -> 
+  calculate(cfg).reduce (accumulate, delta, i) -> accumulate + delta * UNITS[..i-1].reduce (a, b) -> a * b
